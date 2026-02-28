@@ -11,15 +11,12 @@ module.exports = async (req, res) => {
     await ensureTable();
 
     if (req.method === 'GET') {
-      const result = await query(
-        `SELECT * FROM Contact ORDER BY "createdAt" ASC`
-      );
+      const result = await query(`SELECT * FROM Contact ORDER BY "createdAt" ASC`);
       return res.status(200).json({ contacts: result.rows, total: result.rows.length });
     }
 
     if (req.method === 'DELETE') {
-      await query(`DELETE FROM Contact`);
-      await query(`ALTER SEQUENCE contact_id_seq RESTART WITH 1`);
+      await query(`TRUNCATE Contact RESTART IDENTITY CASCADE`);
       return res.status(200).json({ message: 'All contacts deleted, ID counter reset' });
     }
 

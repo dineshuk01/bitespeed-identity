@@ -2,7 +2,6 @@ const { ensureTable } = require('./db');
 const { identify } = require('./identifyService');
 
 module.exports = async (req, res) => {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,17 +12,20 @@ module.exports = async (req, res) => {
   try {
     await ensureTable();
 
-    const { email, phoneNumber } = req.body || {};
-    const hasEmail = email !== undefined && email !== null && email !== '';
-    const hasPhone = phoneNumber !== undefined && phoneNumber !== null && phoneNumber !== '';
+    // Vercel parses JSON body automatically, but guard anyway
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const { email, phoneNumber } = body;
+
+    const hasEmail = email !== undefined && email !== null && String(email).trim() !== '';
+    const hasPhone = phoneNumber !== undefined && phoneNumber !== null && String(phoneNumber).trim() !== '';
 
     if (!hasEmail && !hasPhone) {
       return res.status(400).json({ error: 'At least one of email or phoneNumber must be provided' });
     }
 
     const result = await identify(
-      hasEmail ? String(email) : null,
-      hasPhone ? String(phoneNumber) : null
+      hasEmail ? String(email).trim() : null,
+      hasPhone ? String(phoneNumber).trim() : null
     );
 
     return res.status(200).json(result);
