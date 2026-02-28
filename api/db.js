@@ -8,20 +8,26 @@ function getPool() {
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
       max: 1,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 15000,
     });
 
     pool.on('error', (err) => {
-      console.error('Unexpected pool error', err);
-      pool = null; // reset so next request gets a fresh pool
+      console.error('Pool error:', err.message);
+      pool = null;
     });
   }
   return pool;
 }
 
 async function query(text, params) {
-  return getPool().query(text, params);
+  const p = getPool();
+  try {
+    return await p.query(text, params);
+  } catch (err) {
+    pool = null; // reset on error so next request retries
+    throw err;
+  }
 }
 
 async function ensureTable() {
@@ -35,11 +41,12 @@ async function ensureTable() {
       "createdAt"      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       "updatedAt"      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       "deletedAt"      TIMESTAMPTZ
-    );
-    CREATE INDEX IF NOT EXISTS idx_contact_email  ON Contact(email);
-    CREATE INDEX IF NOT EXISTS idx_contact_phone  ON Contact("phoneNumber");
-    CREATE INDEX IF NOT EXISTS idx_contact_linked ON Contact("linkedId");
+    )
   `);
+
+  await query(`CREATE INDEX IF NOT EXISTS idx_contact_email  ON Contact(email)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_contact_phone  ON Contact("phoneNumber")`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_contact_linked ON Contact("linkedId")`);
 }
 
 module.exports = { query, ensureTable };
