@@ -9,10 +9,17 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Debug: check env variable exists
+  if (!process.env.DATABASE_URL) {
+    return res.status(500).json({ 
+      error: 'DATABASE_URL environment variable is not set',
+      hint: 'Add DATABASE_URL in Vercel Settings → Environment Variables'
+    });
+  }
+
   try {
     await ensureTable();
 
-    // Vercel parses JSON body automatically, but guard anyway
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const { email, phoneNumber } = body;
 
@@ -29,8 +36,14 @@ module.exports = async (req, res) => {
     );
 
     return res.status(200).json(result);
+
   } catch (err) {
     console.error('/api/identify error:', err);
-    return res.status(500).json({ error: 'Internal server error', details: err.message });
+    // Return full error details so we can debug
+    return res.status(500).json({ 
+      error: 'Internal server error', 
+      details: err.message,
+      code: err.code 
+    });
   }
 };
