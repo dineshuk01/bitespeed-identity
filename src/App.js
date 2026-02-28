@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-const API = "";  // same domain on Vercel, localhost:3001 in dev via proxy
+const API = "/api";  // same domain on Vercel, localhost:3001 in dev via proxy
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 function fmt(iso) {
